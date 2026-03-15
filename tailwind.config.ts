@@ -13,15 +13,22 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        surface: "hsl(var(--surface))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          hover: "hsl(var(--primary-hover))",
+          active: "hsl(var(--primary-active))",
+          light: "hsl(var(--primary-light))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -38,6 +45,7 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          soft: "hsl(var(--accent-soft))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -46,6 +54,14 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        status: {
+          green: "hsl(var(--status-green))",
+          "green-bg": "hsl(var(--status-green-bg))",
+          orange: "hsl(var(--status-orange))",
+          "orange-bg": "hsl(var(--status-orange-bg))",
+          red: "hsl(var(--status-red))",
+          "red-bg": "hsl(var(--status-red-bg))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -58,32 +74,47 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
+      spacing: {
+        'xs': '4px',
+        'sm-space': '8px',
+        'md-space': '12px',
+        'base': '16px',
+        'lg-space': '20px',
+        'xl-space': '24px',
+        '2xl-space': '32px',
+        '3xl-space': '48px',
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        card: "12px",
+        modal: "16px",
+        pill: "9999px",
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        "pulse-dot": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.4" },
+        },
+        "slide-up": {
+          from: { transform: "translateY(100%)" },
+          to: { transform: "translateY(0)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "pulse-dot": "pulse-dot 1.5s ease-in-out infinite",
+        "slide-up": "slide-up 0.3s ease-out",
       },
     },
   },
