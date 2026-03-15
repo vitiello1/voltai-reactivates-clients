@@ -1,0 +1,97 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useApp } from '@/contexts/AppContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+
+export default function LoginPage() {
+  const [isSignup, setIsSignup] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [salonName, setSalonName] = useState('');
+  const { login, signup } = useApp();
+  const navigate = useNavigate();
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error('Preencha todos os campos');
+      return;
+    }
+    const success = login(email, password);
+    if (success) navigate('/dashboard');
+    else toast.error('E-mail ou senha incorretos');
+  };
+
+  const handleSignup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !salonName || !email || !password) {
+      toast.error('Preencha todos os campos');
+      return;
+    }
+    const success = signup(name, salonName, email, password);
+    if (success) navigate('/onboarding');
+    else toast.error('Este e-mail já está em uso');
+  };
+
+  if (isSignup) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col px-6 py-8">
+        <button onClick={() => setIsSignup(false)} className="self-start text-muted-foreground mb-6">
+          ← Voltar
+        </button>
+        <h1 className="heading-lg mb-8">Criar sua conta</h1>
+        <form onSubmit={handleSignup} className="flex flex-col gap-4 flex-1">
+          <div>
+            <label className="label-text text-muted-foreground mb-1.5 block">Nome completo</label>
+            <Input value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome" className="h-12 rounded-md bg-surface" />
+          </div>
+          <div>
+            <label className="label-text text-muted-foreground mb-1.5 block">Nome do salão</label>
+            <Input value={salonName} onChange={e => setSalonName(e.target.value)} placeholder="Nome do seu salão" className="h-12 rounded-md bg-surface" />
+          </div>
+          <div>
+            <label className="label-text text-muted-foreground mb-1.5 block">E-mail</label>
+            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" className="h-12 rounded-md bg-surface" />
+          </div>
+          <div>
+            <label className="label-text text-muted-foreground mb-1.5 block">Senha</label>
+            <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" className="h-12 rounded-md bg-surface" />
+          </div>
+          <Button type="submit" size="lg" className="w-full h-12 mt-4 text-[16px] font-semibold rounded-md">
+            CRIAR CONTA
+          </Button>
+        </form>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
+      <div className="w-full max-w-sm flex flex-col items-center">
+        <h1 className="heading-xl text-primary mb-2">Voltai</h1>
+        <p className="body-sm text-muted-foreground mb-10">Faça seus clientes voltarem</p>
+
+        <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
+          <div>
+            <label className="label-text text-muted-foreground mb-1.5 block">E-mail</label>
+            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" className="h-12 rounded-md bg-surface" />
+          </div>
+          <div>
+            <label className="label-text text-muted-foreground mb-1.5 block">Senha</label>
+            <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Sua senha" className="h-12 rounded-md bg-surface" />
+          </div>
+          <Button type="submit" size="lg" className="w-full h-12 mt-2 text-[16px] font-semibold rounded-md">
+            ENTRAR
+          </Button>
+        </form>
+
+        <button onClick={() => setIsSignup(true)} className="mt-6 body-sm text-muted-foreground">
+          Não tem conta? <span className="text-primary font-medium">Criar conta</span>
+        </button>
+      </div>
+    </div>
+  );
+}
