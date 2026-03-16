@@ -1,23 +1,27 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import {
-  Professional, Service, Client, Appointment, Reminder, ClientWithStatus,
-  mockProfessional, defaultServices, mockClients, mockAppointments, mockReminders,
-  getClientStatus,
-} from '@/lib/mock-data';
+import React, { createContext, useContext, ReactNode, useMemo } from 'react';
+import { Professional, Service, Client, Appointment, Reminder, ClientWithStatus, getClientStatus } from '@/lib/mock-data';
+import { useAuth } from '@/hooks/useAuth';
+import { useProfessional, useUpdateProfessional } from '@/hooks/useProfessional';
+import { useServices, useUpdateService, useAddService } from '@/hooks/useServices';
+import { useClients, useAddClient } from '@/hooks/useClients';
+import { useAppointments, useAddAppointment } from '@/hooks/useAppointments';
+import { useReminders, useAddReminder, useMarkReturned } from '@/hooks/useReminders';
 
 interface AppContextType {
-  professional: Professional | null;
+  user: ReturnType<typeof useAuth>['user'];
   isAuthenticated: boolean;
+  authLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, name: string, salonName: string) => Promise<void>;
+  logout: () => Promise<void>;
+  professional: Professional | null;
   services: Service[];
   clients: Client[];
   appointments: Appointment[];
   reminders: Reminder[];
   clientsWithStatus: ClientWithStatus[];
-  login: (email: string, password: string) => boolean;
-  signup: (name: string, salonName: string, email: string, password: string) => boolean;
-  logout: () => void;
   addAppointment: (clientId: string, serviceId: string, date: string) => void;
-  addClient: (name: string, phone: string) => Client;
+  addClient: (name: string, phone: string) => Promise<Client>;
   addReminder: (appointmentId: string, status: 'sent' | 'failed') => void;
   markReturned: (clientId: string) => void;
   updateService: (serviceId: string, updates: Partial<Service>) => void;
@@ -28,116 +32,113 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [professional, setProfessional] = useState<Professional | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [services, setServices] = useState<Service[]>(defaultServices);
-  const [clients, setClients] = useState<Client[]>(mockClients);
-  const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
-  const [reminders, setReminders] = useState<Reminder[]>(mockReminders);
+  const { user, loading: authLoading, login, signup, logout } = useAuth();
+  const professionalId = user?.id;
 
-  const clientsWithStatus = clients.map(c => getClientStatus(c, appointments, services))
-    .sort((a, b) => b.daysOverdue - a.daysOverdue);
+  const { data: professional = null } = useProfessional(professionalId);
+  const { data: services = [] } = useServices(professionalId);
+  const { data: clients = [] } = useClients(professionalId);
+  const { data: appointments = [] } = useAppointments(professionalId);
+  const { data: reminders = [] } = useReminders(professionalId);
 
-  const login = (email: string, _password: string) => {
-    setProfessional({ ...mockProfessional, email });
-    setIsAuthenticated(true);
-    return true;
-  };
+  const { mutate: updateProfessionalMutation } = useUpdateProfessional();
+  const { mutate: updateServiceMutation } = useUpdateService();
+  const { mutateAsync: addServiceMutation } = useAddService();
+  const { mutateAsync: addClientMutation } = useAddClient();
+  const { mutate: addAppointmentMutation } = useAddAppointment();
+  const { mutate: addReminderMutation } = useAddReminder();
+  const { mutate: markReturnedMutation } = useMarkReturned();
 
-  const signup = (name: string, salonName: string, email: string, _password: string) => {
-    setProfessional({ ...mockProfessional, name, salon_name: salonName, email, whatsapp_connected: false, whatsapp_number: null });
-    setIsAuthenticated(true);
-    return true;
-  };
-
-  const logout = () => {
-    setProfessional(null);
-    setIsAuthenticated(false);
-  };
+  const clientsWithStatus = useMemo(() =>
+    clients
+      .map(c => getClientStatus(c, appointments, services))
+      .sort((a, b) => b.daysOverdue - a.daysOverdue),
+    [clients, appointments, services]
+  );
 
   const addAppointment = (clientId: string, serviceId: string, date: string) => {
     const service = services.find(s => s.id === serviceId);
-    if (!service) return;
+    if (!service || !professionalId) return;
     const dateObj = new Date(date);
     dateObj.setDate(dateObj.getDate() + service.interval_days);
     const returnDate = dateObj.toISOString().split('T')[0];
-    const newAppt: Appointment = {
-      id: `a${Date.now()}`,
-      professional_id: professional?.id || 'p1',
+    addAppointmentMutation({
+      professional_id: professionalId,
       client_id: clientId,
       service_id: serviceId,
       date,
       return_date: returnDate,
-    };
-    setAppointments(prev => [...prev, newAppt]);
+    });
   };
 
-  const addClient = (name: string, phone: string): Client => {
-    const newClient: Client = {
-      id: `c${Date.now()}`,
-      professional_id: professional?.id || 'p1',
-      name,
-      phone,
-    };
-    setClients(prev => [...prev, newClient]);
-    return newClient;
+  const addClient = async (name: string, phone: string): Promise<Client> => {
+    if (!professionalId) throw new Error('Not authenticated');
+    return addClientMutation({ professional_id: professionalId, name, phone });
   };
 
   const addReminder = (appointmentId: string, status: 'sent' | 'failed') => {
-    const newReminder: Reminder = {
-      id: `r${Date.now()}`,
+    if (!professionalId) return;
+    addReminderMutation({
       appointment_id: appointmentId,
-      professional_id: professional?.id || 'p1',
+      professional_id: professionalId,
       sent_at: new Date().toISOString(),
       status,
       returned_at: null,
-    };
-    setReminders(prev => [...prev, newReminder]);
+    });
   };
 
   const markReturned = (clientId: string) => {
-    const clientAppts = appointments.filter(a => a.client_id === clientId);
-    const lastAppt = clientAppts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-    if (lastAppt) {
-      const relatedReminder = reminders.find(r => r.appointment_id === lastAppt.id);
-      if (relatedReminder) {
-        setReminders(prev => prev.map(r => r.id === relatedReminder.id ? { ...r, returned_at: new Date().toISOString() } : r));
-      }
-      // Add a new "today" appointment to mark them as returned
-      const service = services.find(s => s.id === lastAppt.service_id);
-      if (service) {
-        addAppointment(clientId, lastAppt.service_id, new Date().toISOString().split('T')[0]);
-      }
-    }
+    const clientAppts = appointments
+      .filter(a => a.client_id === clientId)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const lastAppt = clientAppts[0];
+    if (!lastAppt || !professionalId) return;
+    const relatedReminder = reminders.find(r => r.appointment_id === lastAppt.id);
+    if (relatedReminder) markReturnedMutation(relatedReminder.id);
+    addAppointment(clientId, lastAppt.service_id, new Date().toISOString().split('T')[0]);
   };
 
   const updateService = (serviceId: string, updates: Partial<Service>) => {
-    setServices(prev => prev.map(s => s.id === serviceId ? { ...s, ...updates } : s));
+    updateServiceMutation({ id: serviceId, updates });
   };
 
   const addService = (name: string, intervalDays: number) => {
-    const newService: Service = {
-      id: `s${Date.now()}`,
-      professional_id: professional?.id || 'p1',
+    if (!professionalId) return;
+    addServiceMutation({
+      professional_id: professionalId,
       name,
       interval_days: intervalDays,
       message_template: "Oi {nome}! 😊 Já faz {dias} dias desde o seu {serviço} aqui no salão. Que tal renovar? Tenho horário disponível essa semana — me chama aqui e já garantimos o seu! 🗓️",
       is_custom: true,
-    };
-    setServices(prev => [...prev, newService]);
+    });
   };
 
   const updateProfessional = (updates: Partial<Professional>) => {
-    if (professional) {
-      setProfessional({ ...professional, ...updates });
-    }
+    if (!professionalId) return;
+    updateProfessionalMutation({ id: professionalId, updates });
   };
 
   return (
     <AppContext.Provider value={{
-      professional, isAuthenticated, services, clients, appointments, reminders,
-      clientsWithStatus, login, signup, logout, addAppointment, addClient,
-      addReminder, markReturned, updateService, addService, updateProfessional,
+      user,
+      isAuthenticated: !!user,
+      authLoading,
+      login,
+      signup,
+      logout,
+      professional,
+      services,
+      clients,
+      appointments,
+      reminders,
+      clientsWithStatus,
+      addAppointment,
+      addClient,
+      addReminder,
+      markReturned,
+      updateService,
+      addService,
+      updateProfessional,
     }}>
       {children}
     </AppContext.Provider>
