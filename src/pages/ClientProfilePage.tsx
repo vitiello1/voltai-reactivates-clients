@@ -8,11 +8,12 @@ import { NewAppointmentSheet } from '@/components/NewAppointmentSheet';
 import { ArrowLeft, Phone, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { sendTextMessage, buildMessage } from '@/lib/evolution-api';
 
 export default function ClientProfilePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { clientsWithStatus, appointments, services, reminders, addReminder, markReturned } = useApp();
+  const { professional, clientsWithStatus, appointments, services, reminders, addReminder, markReturned } = useApp();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -29,16 +30,36 @@ export default function ClientProfilePage() {
     .filter(a => a.client_id === id)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const handleSendReminder = () => {
+  const handleSendReminder = async () => {
+    const lastAppt = clientAppointments[0];
+    if (!lastAppt) { toast.error('Nenhum atendimento registrado'); return; }
     setSending(true);
-    setTimeout(() => {
-      const lastAppt = clientAppointments[0];
-      if (lastAppt) {
-        addReminder(lastAppt.id, 'sent');
-        toast.success(`Lembrete enviado para ${client.name}!`);
-      }
-      setSending(false);
-    }, 1500);
+
+    const service = services.find(s => s.id === lastAppt.service_id);
+    const message = buildMessage(
+      service?.message_template || 'Oi {nome}! 😊 Já faz {dias} dias desde o seu {serviço}. Que tal agendar?',
+      client.name.split(' ')[0],
+      service?.name || 'serviço',
+      client.daysOverdue
+    );
+
+    let status: 'sent' | 'failed' = 'failed';
+
+    const evolutionConfigured = !!(import.meta.env.VITE_EVOLUTION_API_URL && import.meta.env.VITE_EVOLUTION_API_KEY);
+    if (evolutionConfigured && professional?.whatsapp_connected && professional?.id) {
+      const ok = await sendTextMessage(professional.id, client.phone, message);
+      status = ok ? 'sent' : 'failed';
+    } else {
+      // Fallback: open WhatsApp Web with pre-filled message
+      const phone = client.phone.replace(/\D/g, '');
+      window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(message)}`, '_blank');
+      status = 'sent';
+    }
+
+    addReminder(lastAppt.id, status);
+    if (status === 'sent') toast.success(`Lembrete enviado para ${client.name}!`);
+    else toast.error('Falha ao enviar — tente pelo WhatsApp Web');
+    setSending(false);
   };
 
   const handleMarkReturned = () => {
