@@ -74,7 +74,7 @@ export async function sendTextMessage(
     headers,
     body: JSON.stringify({
       number: phoneWithCode,
-      text: message,
+      textMessage: { text: message },
     }),
   });
   return res.ok;
