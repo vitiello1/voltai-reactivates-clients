@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/StatusBadge';
 import { FAB } from '@/components/FAB';
 import { NewAppointmentSheet } from '@/components/NewAppointmentSheet';
+import { ReturnedSheet } from '@/components/ReturnedSheet';
 import { ArrowLeft, Phone, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -13,8 +14,9 @@ import { sendTextMessage, buildMessage } from '@/lib/evolution-api';
 export default function ClientProfilePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { professional, clientsWithStatus, appointments, services, reminders, addReminder, markReturned } = useApp();
+  const { professional, clientsWithStatus, appointments, services, reminders, addReminder } = useApp();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [returnedSheetOpen, setReturnedSheetOpen] = useState(false);
   const [sending, setSending] = useState(false);
 
   const client = clientsWithStatus.find(c => c.id === id);
@@ -62,10 +64,7 @@ export default function ClientProfilePage() {
     setSending(false);
   };
 
-  const handleMarkReturned = () => {
-    markReturned(client.id);
-    toast.success(`Ótimo! ${client.name} marcado como retornou`);
-  };
+  const lastServiceId = clientAppointments[0]?.service_id;
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -105,7 +104,7 @@ export default function ClientProfilePage() {
           {sending ? 'Enviando...' : 'ENVIAR LEMBRETE AGORA'}
         </Button>
         <Button
-          onClick={handleMarkReturned}
+          onClick={() => setReturnedSheetOpen(true)}
           variant="outline-green"
           size="lg"
           className="w-full h-12 text-[15px] font-semibold rounded-md"
@@ -154,6 +153,12 @@ export default function ClientProfilePage() {
 
       <FAB onClick={() => setSheetOpen(true)} label="Registrar atendimento" />
       <NewAppointmentSheet open={sheetOpen} onOpenChange={setSheetOpen} preselectedClientId={id} />
+      <ReturnedSheet
+        open={returnedSheetOpen}
+        onOpenChange={setReturnedSheetOpen}
+        client={client}
+        lastServiceId={lastServiceId}
+      />
     </div>
   );
 }
