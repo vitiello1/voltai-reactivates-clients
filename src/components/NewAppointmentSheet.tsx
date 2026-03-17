@@ -52,21 +52,21 @@ export function NewAppointmentSheet({ open, onOpenChange, preselectedClientId }:
 
   const selectedClient = clients.find(c => c.id === selectedClientId);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     let clientId = selectedClientId;
     if (showNewClient) {
       if (!newClientName.trim() || !newClientPhone.trim()) {
         toast.error('Preencha nome e telefone do cliente');
         return;
       }
-      const newClient = addClient(newClientName.trim(), newClientPhone.trim());
+      const newClient = await addClient(newClientName.trim(), newClientPhone.trim());
       clientId = newClient.id;
     }
     if (!clientId || !selectedServiceId || !date) {
       toast.error('Preencha todos os campos');
       return;
     }
-    addAppointment(clientId, selectedServiceId, date);
+    await addAppointment(clientId, selectedServiceId, date);
     toast.success('Atendimento registrado!');
     onOpenChange(false);
     resetForm();
