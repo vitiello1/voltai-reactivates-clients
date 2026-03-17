@@ -11,29 +11,37 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [salonName, setSalonName] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login, signup } = useApp();
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error('Preencha todos os campos');
-      return;
+    if (!email || !password) { toast.error('Preencha todos os campos'); return; }
+    setLoading(true);
+    try {
+      await login(email, password);
+      navigate('/dashboard');
+    } catch {
+      toast.error('E-mail ou senha incorretos');
+    } finally {
+      setLoading(false);
     }
-    const success = login(email, password);
-    if (success) navigate('/dashboard');
-    else toast.error('E-mail ou senha incorretos');
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !salonName || !email || !password) {
-      toast.error('Preencha todos os campos');
-      return;
+    if (!name || !salonName || !email || !password) { toast.error('Preencha todos os campos'); return; }
+    if (password.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return; }
+    setLoading(true);
+    try {
+      await signup(email, password, name, salonName);
+      navigate('/onboarding');
+    } catch {
+      toast.error('Este e-mail já está em uso');
+    } finally {
+      setLoading(false);
     }
-    const success = signup(name, salonName, email, password);
-    if (success) navigate('/onboarding');
-    else toast.error('Este e-mail já está em uso');
   };
 
   if (isSignup) {
@@ -60,8 +68,8 @@ export default function LoginPage() {
             <label className="label-text text-muted-foreground mb-1.5 block">Senha</label>
             <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" className="h-12 rounded-md bg-surface" />
           </div>
-          <Button type="submit" size="lg" className="w-full h-12 mt-4 text-[16px] font-semibold rounded-md">
-            CRIAR CONTA
+          <Button type="submit" disabled={loading} size="lg" className="w-full h-12 mt-4 text-[16px] font-semibold rounded-md">
+            {loading ? 'Criando conta...' : 'CRIAR CONTA'}
           </Button>
         </form>
       </div>
@@ -83,8 +91,8 @@ export default function LoginPage() {
             <label className="label-text text-muted-foreground mb-1.5 block">Senha</label>
             <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Sua senha" className="h-12 rounded-md bg-surface" />
           </div>
-          <Button type="submit" size="lg" className="w-full h-12 mt-2 text-[16px] font-semibold rounded-md">
-            ENTRAR
+          <Button type="submit" disabled={loading} size="lg" className="w-full h-12 mt-2 text-[16px] font-semibold rounded-md">
+            {loading ? 'Entrando...' : 'ENTRAR'}
           </Button>
         </form>
 
