@@ -20,7 +20,7 @@ interface AppContextType {
   appointments: Appointment[];
   reminders: Reminder[];
   clientsWithStatus: ClientWithStatus[];
-  addAppointment: (clientId: string, serviceId: string, date: string) => void;
+  addAppointment: (clientId: string, serviceId: string, date: string) => Promise<void>;
   addClient: (name: string, phone: string) => Promise<Client>;
   addReminder: (appointmentId: string, status: 'sent' | 'failed') => void;
   markReturned: (clientId: string) => void;
@@ -45,7 +45,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const { mutate: updateServiceMutation } = useUpdateService();
   const { mutateAsync: addServiceMutation } = useAddService();
   const { mutateAsync: addClientMutation } = useAddClient();
-  const { mutate: addAppointmentMutation } = useAddAppointment();
+  const { mutateAsync: addAppointmentMutation } = useAddAppointment();
   const { mutate: addReminderMutation } = useAddReminder();
   const { mutate: markReturnedMutation } = useMarkReturned();
 
@@ -56,13 +56,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [clients, appointments, services]
   );
 
-  const addAppointment = (clientId: string, serviceId: string, date: string) => {
+  const addAppointment = async (clientId: string, serviceId: string, date: string): Promise<void> => {
     const service = services.find(s => s.id === serviceId);
     if (!service || !professionalId) return;
     const dateObj = new Date(date);
     dateObj.setDate(dateObj.getDate() + service.interval_days);
     const returnDate = dateObj.toISOString().split('T')[0];
-    addAppointmentMutation({
+    await addAppointmentMutation({
       professional_id: professionalId,
       client_id: clientId,
       service_id: serviceId,
@@ -87,7 +87,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const markReturned = (clientId: string) => {
+  const markReturned = async (clientId: string) => {
     const clientAppts = appointments
       .filter(a => a.client_id === clientId)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -95,7 +95,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!lastAppt || !professionalId) return;
     const relatedReminder = reminders.find(r => r.appointment_id === lastAppt.id);
     if (relatedReminder) markReturnedMutation(relatedReminder.id);
-    addAppointment(clientId, lastAppt.service_id, new Date().toISOString().split('T')[0]);
+    await addAppointment(clientId, lastAppt.service_id, new Date().toISOString().split('T')[0]);
   };
 
   const updateService = (serviceId: string, updates: Partial<Service>) => {

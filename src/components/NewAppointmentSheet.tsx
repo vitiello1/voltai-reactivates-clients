@@ -66,10 +66,15 @@ export function NewAppointmentSheet({ open, onOpenChange, preselectedClientId }:
       toast.error('Preencha todos os campos');
       return;
     }
-    await addAppointment(clientId, selectedServiceId, date);
-    toast.success('Atendimento registrado!');
-    onOpenChange(false);
-    resetForm();
+    try {
+      await addAppointment(clientId, selectedServiceId, date);
+      toast.success('Atendimento registrado!');
+      onOpenChange(false);
+      resetForm();
+    } catch (err) {
+      console.error('addAppointment error:', err);
+      toast.error('Erro ao salvar atendimento. Tente novamente.');
+    }
   };
 
   const resetForm = () => {
