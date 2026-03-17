@@ -35,7 +35,7 @@ export default function OnboardingPage() {
           <span className="text-status-green heading-xl">✓</span>
         )}
         {qrCode && status === 'connecting' && (
-          <img src={`data:image/png;base64,${qrCode}`} alt="QR Code WhatsApp" className="w-full h-full object-contain p-2" />
+          <img src={qrCode.startsWith('data:') ? qrCode : `data:image/png;base64,${qrCode}`} alt="QR Code WhatsApp" className="w-full h-full object-contain p-2" />
         )}
         {(status === 'loading' || (status === 'connecting' && !qrCode)) && (
           <div className="flex flex-col items-center gap-2">
