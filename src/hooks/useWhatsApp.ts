@@ -19,7 +19,8 @@ export function useWhatsApp(professionalId: string | undefined) {
     setError(null);
 
     try {
-      await createInstance(professionalId);
+      // createInstance may fail if instance already exists — ignore that error
+      try { await createInstance(professionalId); } catch { /* instance may already exist */ }
       setStatus('connecting');
 
       // Poll for QR Code
