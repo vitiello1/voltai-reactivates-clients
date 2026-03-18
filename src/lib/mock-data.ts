@@ -39,11 +39,11 @@ export interface Reminder {
   appointment_id: string;
   professional_id: string;
   sent_at: string;
-  status: 'sent' | 'failed';
+  status: 'sent' | 'failed' | 'followup' | 'alert';
   returned_at: string | null;
 }
 
-export type ClientStatus = 'em_dia' | 'atencao' | 'inativo';
+export type ClientStatus = 'em_dia' | 'atencao' | 'inativo' | 'alerta';
 
 export interface ClientWithStatus extends Client {
   status: ClientStatus;
@@ -90,7 +90,7 @@ export const mockReminders: Reminder[] = [
   { id: "r3", appointment_id: "a1", professional_id: "p1", sent_at: "2025-03-13", status: "failed", returned_at: null },
 ];
 
-export function getClientStatus(client: Client, appointments: Appointment[], services: Service[]): ClientWithStatus {
+export function getClientStatus(client: Client, appointments: Appointment[], services: Service[], reminders: Reminder[] = []): ClientWithStatus {
   const clientAppts = appointments
     .filter(a => a.client_id === client.id)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -105,10 +105,18 @@ export function getClientStatus(client: Client, appointments: Appointment[], ser
   const today = new Date();
   const diffDays = Math.floor((today.getTime() - returnDate.getTime()) / (1000 * 60 * 60 * 24));
 
+  // Verifica se há alerta ativo (follow-up enviado e cliente não retornou)
+  const apptReminders = reminders.filter(r => r.appointment_id === lastAppt.id);
+  const hasAlert = apptReminders.some(r => r.status === 'alert');
+  const clientReturned = apptReminders.some(r => r.returned_at);
+
   let status: ClientStatus;
   let daysInfo: string;
 
-  if (diffDays > 0) {
+  if (hasAlert && !clientReturned) {
+    status = 'alerta';
+    daysInfo = 'Não respondeu';
+  } else if (diffDays > 0) {
     status = 'inativo';
     daysInfo = `${diffDays} dias atrasado`;
   } else if (diffDays > -7) {

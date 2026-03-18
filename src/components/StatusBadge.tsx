@@ -2,9 +2,10 @@ import { cn } from '@/lib/utils';
 import { ClientStatus } from '@/lib/mock-data';
 
 const statusConfig: Record<ClientStatus, { label: string; dotClass: string; bgClass: string; textClass: string }> = {
-  em_dia: { label: 'Em dia', dotClass: 'bg-status-green', bgClass: 'bg-status-green-bg', textClass: 'text-status-green' },
-  atencao: { label: 'Atenção', dotClass: 'bg-status-orange', bgClass: 'bg-status-orange-bg', textClass: 'text-status-orange' },
-  inativo: { label: 'Inativo', dotClass: 'bg-status-red', bgClass: 'bg-status-red-bg', textClass: 'text-status-red' },
+  em_dia:  { label: 'Em dia',         dotClass: 'bg-status-green',  bgClass: 'bg-status-green-bg',  textClass: 'text-status-green' },
+  atencao: { label: 'Atenção',        dotClass: 'bg-status-orange', bgClass: 'bg-status-orange-bg', textClass: 'text-status-orange' },
+  inativo: { label: 'Inativo',        dotClass: 'bg-status-red',    bgClass: 'bg-status-red-bg',    textClass: 'text-status-red' },
+  alerta:  { label: '⚠️ Não respondeu', dotClass: 'bg-purple-500',  bgClass: 'bg-purple-50',        textClass: 'text-purple-700' },
 };
 
 interface StatusBadgeProps {

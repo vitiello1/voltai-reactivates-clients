@@ -133,11 +133,15 @@ export default function ClientProfilePage() {
                   </div>
                   {apptReminders.map(r => (
                     <div key={r.id} className="mt-2">
-                      <span className={cn(
-                        'label-text',
-                        r.status === 'sent' ? 'text-status-green' : 'text-status-red'
-                      )}>
-                        {r.status === 'sent' ? 'Lembrete enviado ✓' : 'Lembrete falhou ✗'}
+                      <span className={cn('label-text', {
+                        'text-status-green': r.status === 'sent' || r.status === 'followup',
+                        'text-status-red': r.status === 'failed',
+                        'text-purple-700': r.status === 'alert',
+                      })}>
+                        {r.status === 'sent'     && 'Lembrete enviado ✓'}
+                        {r.status === 'followup' && 'Follow-up enviado ✓'}
+                        {r.status === 'failed'   && 'Lembrete falhou ✗'}
+                        {r.status === 'alert'    && '⚠️ Cliente não respondeu'}
                       </span>
                       {r.returned_at && (
                         <span className="label-text text-status-green ml-3">Cliente retornou ✓</span>

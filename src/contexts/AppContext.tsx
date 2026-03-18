@@ -51,7 +51,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const clientsWithStatus = useMemo(() =>
     clients
-      .map(c => getClientStatus(c, appointments, services))
+      .map(c => getClientStatus(c, appointments, services, reminders))
       .sort((a, b) => b.daysOverdue - a.daysOverdue),
     [clients, appointments, services]
   );
