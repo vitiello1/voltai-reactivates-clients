@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
+import { useWhatsApp } from '@/hooks/useWhatsApp';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,7 +18,8 @@ import { cn } from '@/lib/utils';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const { professional, services, updateService, addService, updateProfessional, logout } = useApp();
+  const { user, professional, services, updateService, addService, updateProfessional, logout } = useApp();
+  const { disconnect } = useWhatsApp(user?.id);
 
   const [editServiceId, setEditServiceId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -103,7 +105,7 @@ export default function SettingsPage() {
         <h2 className="label-text text-muted-foreground mb-3 uppercase">WhatsApp</h2>
         <div className="p-4 bg-surface rounded-card shadow-card space-y-3">
           <div className="flex items-center justify-between">
-            <span className="body-lg">{professional?.whatsapp_number || 'Não conectado'}</span>
+            <span className="body-lg">{professional?.whatsapp_connected ? 'WhatsApp conectado' : 'Não conectado'}</span>
             <div className="flex items-center gap-1.5">
               <span className={cn('w-2 h-2 rounded-full', professional?.whatsapp_connected ? 'bg-status-green' : 'bg-status-red')} />
               <span className={cn('label-text', professional?.whatsapp_connected ? 'text-status-green' : 'text-status-red')}>
@@ -111,9 +113,23 @@ export default function SettingsPage() {
               </span>
             </div>
           </div>
-          <Button variant="outline" onClick={() => navigate('/onboarding')} className="w-full rounded-md">
-            Reconectar WhatsApp
-          </Button>
+          {professional?.whatsapp_connected ? (
+            <Button
+              variant="outline"
+              onClick={async () => {
+                await disconnect();
+                updateProfessional({ whatsapp_connected: false });
+                toast.success('WhatsApp desconectado');
+              }}
+              className="w-full rounded-md text-status-red border-status-red hover:bg-red-50"
+            >
+              Desconectar WhatsApp
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={() => navigate('/onboarding')} className="w-full rounded-md">
+              Conectar WhatsApp
+            </Button>
+          )}
         </div>
       </section>
 
